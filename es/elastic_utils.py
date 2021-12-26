@@ -1,5 +1,8 @@
-from elasticsearch import Elasticsearch
 import json
+import jieba
+from elasticsearch import Elasticsearch
+
+from . import word2vec
 
 
 def store_data():
@@ -42,6 +45,42 @@ def store_data():
             if counter > 100000:
                 break
             line = f.readline()
+
+
+def search_more(keywords_str, yearmonth1, yearmonth2):
+    es = Elasticsearch([{'host':'localhost', 'port':9200}])
+    search_doc = {
+        "query": {
+            "bool":{
+                "should": [],
+                "minimum_should_match": 1,
+                "filter":{"range":{"date":{
+                    "gte": yearmonth1,
+                    "lte": yearmonth2,
+                    "format": "yyyy-MM"
+                }}}
+            }
+        }
+    }
+    # 使用jieba进行分词
+    # 将分词结果都设为关键词避免检索时elastic search自动逐字分词
+    # lcut_for_search分得更细，适合基于倒排索引检索，但可能存在冗余（例如'北京晚报'会被切割为['北京', '晚报', '北京晚报']）
+    # 检索时使用should，即“or”，先模糊查询之后再重排序
+    keywords = jieba.lcut_for_search(keywords_str)
+    print(keywords)
+    for keyword in keywords:
+        keyword_term = {"term": {"content.keyword": keyword}}
+        search_doc["query"]["bool"]["should"].append(keyword_term)
+    # 加个filter_path可以避免返回无用数据
+    search_res = es.search(index="try_index", body=search_doc, filter_path=['hits.hits._id', 'hits.hits._source', 'hits.hits._score'], size=50)
+    search_res = eval(str(search_res))
+    search_res = search_res['hits']['hits']
+    search_res_raw = [s['_source'] for s in search_res]
+    ids = [s['_id'] for s in search_res]
+    scores = [s['_score'] for s in search_res]
+    ids_ranked = word2vec.rank_doc(keywords=keywords, ids=ids, scores=scores)
+    search_res_ranked = [search_res_raw[ids.index(i)] for i in ids_ranked]
+    return search_res_raw[:10], search_res_ranked[:10]
 
 
 def search_data(request_dict):
@@ -199,11 +238,12 @@ def search_data(request_dict):
                     }
                 }
             }
-    search_res = es.search(index="try_index", body=search_doc)
+    # 加个filter_path可以避免返回无用数据
+    search_res = es.search(index="try_index", body=search_doc, filter_path=['hits.hits._id', 'hits.hits._source'])
     search_res = eval(str(search_res))
-    search_res_hits = search_res['hits']['hits']
-    print([s['_id'] for s in search_res_hits])
-    search_res_source = [s['_source'] for s in search_res_hits]
+    search_res = search_res['hits']['hits']
+    print([s['_id'] for s in search_res])
+    search_res_source = [s['_source'] for s in search_res]
     return search_res_source
 
 

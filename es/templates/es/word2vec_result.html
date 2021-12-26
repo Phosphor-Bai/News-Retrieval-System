@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>搜索结果</title>
+  </head>
+  <body>
+    <p>
+        查询条件：出版年份为<strong>{{pub_year}}</strong>，检索语句<strong>{{keywords}}</strong>。
+    </p>
+    <div id="raw">
+        <fieldset>
+            <legend><h2>未排序</h2></legend>
+            <div>
+            {% if result_list_raw %}
+                <ol>
+                {% for res in result_list_raw %}
+                    {% if res.title %}
+                        <li>标题：{{ res.title }}</li>
+                    {% else %}
+                        <li>标题：unknown</li>
+                    {% endif %}
+                    {% if res.author %}
+                        作者：{{ res.author }}<br>
+                    {% else %}
+                        作者：unknown <br>
+                    {% endif %}
+                        日期：{{ res.date }}<br>
+                    {% if res.column %}
+                        版块：{{ res.column }}<br>
+                    {% else %}
+                        版块：unknown<br>
+                    {% endif %}
+                        <div style="white-space: pre-line">内容：<br>{{ res.content }}</div> 
+                {% endfor %}
+                </ol>
+            {% else %}
+                <p>No result available.</p>
+            {% endif %}
+            </div>
+        </fieldset>
+    </div>
+    <div id="ranked">
+        <fieldset>
+            <legend><h2>word2vec排序后</h2></legend>
+            <div>
+            {% if result_list_ranked %}
+                <ol>
+                {% for res in result_list_ranked %}
+                    {% if res.title %}
+                        <li>标题：{{ res.title }}</li>
+                    {% else %}
+                        <li>标题：unknown</li>
+                    {% endif %}
+                    {% if res.author %}
+                        作者：{{ res.author }}<br>
+                    {% else %}
+                        作者：unknown <br>
+                    {% endif %}
+                        日期：{{ res.date }}<br>
+                    {% if res.column %}
+                        版块：{{ res.column }}<br>
+                    {% else %}
+                        版块：unknown<br>
+                    {% endif %}
+                        <div style="white-space: pre-line">内容：<br>{{ res.content }}</div> 
+                {% endfor %}
+                </ol>
+            {% else %}
+                <p>No result available.</p>
+            {% endif %}
+            </div>
+        </fieldset>
+    </div>
+  </body>
+</html>
+
+<style>
+#raw {
+    background-color: #cda2b9;
+    float: left;
+    width: 50%;
+}
+#ranked {
+    background-color: #e0ccd8;
+    float: right;
+    width: 50%;
+}
+</style>

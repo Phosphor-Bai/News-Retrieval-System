@@ -10,9 +10,7 @@ def index(request):
 
 def search_results(request):
     yearmonth1 = request.POST['yearmonth1']
-    year1, month1 = yearmonth1.split('-')
     yearmonth2 = request.POST['yearmonth2']
-    year2, month2 = yearmonth2.split('-')
     request_dict = {
         'yearmonth1': request.POST['yearmonth1'], 'yearmonth2': request.POST['yearmonth2'],
         'include1': request.POST['include1']=="True", 'keyword1': request.POST['keyword1'],
@@ -49,5 +47,23 @@ def search_results(request):
         'keywords': context_keywords,
         'result_list': result_list,
     }
-    # response = "You're looking at the result of <%d> with keywords %s.\n" + str(res)
+    return HttpResponse(template.render(context, request))
+
+def word2vec_search_results(request):
+    result_list_raw, result_list_ranked = elastic_utils.search_more(keywords_str=request.POST['keywords'], yearmonth1=request.POST['yearmonth1'], yearmonth2=request.POST['yearmonth2'])
+    for res in result_list_raw:
+        string = ''
+        res['content'] = string.join(res['content'])
+    template = loader.get_template('es/word2vec_result.html')
+    for res in result_list_ranked:
+        string = ''
+        res['content'] = string.join(res['content'])
+    template = loader.get_template('es/word2vec_result.html')
+
+    context = {
+        'pub_year': str(request.POST['yearmonth1'])+' 至 '+str(request.POST['yearmonth2']),
+        'keywords': request.POST['keywords'],
+        'result_list_raw': result_list_raw,
+        'result_list_ranked': result_list_ranked,
+    }
     return HttpResponse(template.render(context, request))
